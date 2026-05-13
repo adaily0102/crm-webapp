@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - CRM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+
+  <!-- Header -->
+  <header class="bg-indigo-600 text-white p-5 flex justify-between items-center shadow">
+    <h1 class="text-2xl font-bold">🏢 Company CRM</h1>
+    <button onclick="logout()" 
+            class="bg-white text-indigo-600 px-5 py-2 rounded-lg font-medium hover:bg-gray-100">
+      Logout
+    </button>
+  </header>
+
+  <div class="flex">
+    <!-- Sidebar -->
+    <div class="w-64 bg-gray-800 text-white h-screen fixed">
+      <div class="p-6">
+        <h3 class="text-lg font-semibold mb-6 text-gray-300">MAIN MENU</h3>
+        <ul class="space-y-2">
+          <li class="bg-indigo-700 p-4 rounded-xl font-medium">🏠 Dashboard</li>
+          <li onclick="goTo('contacts.html')" class="hover:bg-gray-700 p-4 rounded-xl cursor-pointer">👥 Contacts</li>
+          <li onclick="goTo('activities.html')" class="hover:bg-gray-700 p-4 rounded-xl cursor-pointer">📅 Activities</li>
+          <li onclick="goTo('sales.html')" class="hover:bg-gray-700 p-4 rounded-xl cursor-pointer">💰 Sales Pipeline</li>
+          <li onclick="goTo('invoices.html')" class="hover:bg-gray-700 p-4 rounded-xl cursor-pointer">📄 Invoices</li>
+          <li onclick="goTo('hr.html')" class="hover:bg-gray-700 p-4 rounded-xl cursor-pointer">👔 HR</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64 flex-1 p-8">
+      <h1 class="text-3xl font-bold mb-2">Welcome Back!</h1>
+      <p id="userEmail" class="text-gray-600 mb-8"></p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white p-6 rounded-2xl shadow">
+          <p class="text-gray-500">Total Contacts</p>
+          <span id="totalContacts" class="text-4xl font-bold text-indigo-600">0</span>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow">
+          <p class="text-gray-500">Activities</p>
+          <span id="totalActivities" class="text-4xl font-bold text-indigo-600">0</span>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow">
+          <p class="text-gray-500">Pipeline Value</p>
+          <span id="pipelineValue" class="text-4xl font-bold text-indigo-600">RM 0</span>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow">
+          <p class="text-gray-500">Pending Invoices</p>
+          <span id="pendingInvoices" class="text-4xl font-bold text-indigo-600">0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db, auth } from "./js/firebase-config.js";
+    import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    import { signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) window.location.href = "index.html";
+      else document.getElementById("userEmail").textContent = "Logged in as: " + user.email;
+    });
+
+    window.logout = async () => {
+      await signOut(auth);
+      window.location.href = "index.html";
+    };
+
+    window.goTo = (page) => window.location.href = page;
+
+    // Real-time Summary
+    onSnapshot(collection(db, "contacts"), (snap) => {
+      document.getElementById("totalContacts").textContent = snap.size;
+    });
+
+    onSnapshot(collection(db, "activities"), (snap) => {
+      document.getElementById("totalActivities").textContent = snap.size;
+    });
+
+    onSnapshot(collection(db, "deals"), (snap) => {
+      let total = 0;
+      snap.forEach(doc => total += (doc.data().value || 0));
+      document.getElementById("pipelineValue").textContent = "RM " + total.toLocaleString();
+    });
+
+    onSnapshot(collection(db, "invoices"), (snap) => {
+      let pending = 0;
+      snap.forEach(doc => {
+        if (doc.data().status === "Pending") pending++;
+      });
+      document.getElementById("pendingInvoices").textContent = pending;
+    });
+  </script>
+</body>
+</html>
